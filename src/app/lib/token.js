@@ -42,7 +42,7 @@ export async function refreshAccessToken() {
       refreshToken: data?.refreshToken ?? null,
     };
   } catch (err) {
-    console.error('refreshAccessToken error', err);
+    console.error('refreshAccessToken error Prabhart', err);
     return { error: 'RefreshAccessTokenError' };
   }
 }

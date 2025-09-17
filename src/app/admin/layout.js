@@ -44,7 +44,7 @@ const AdminLayout = ({ children }) => {
   const handleUserMenuClick = ({ key }) => {
     if (key === 'logout') {
       if (typeof logout === 'function') logout();
-      router.push('/auth/login');
+      router.push('/login');
     }
     if (key === 'profile') router.push('/admin/profile');
   };

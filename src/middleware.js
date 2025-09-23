@@ -1,48 +1,69 @@
 // middleware.js (place at project root)
-import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-const ADMIN_PREFIX = '/admin'; // adjust to the prefix you want to protect
-const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET; // required
+const ADMIN_PREFIX = "/admin"; // adjust if needed
+const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET;
+
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
 
-  // Only protect paths under ADMIN_PREFIX
+  // Only protect /admin/*
   if (!pathname.startsWith(ADMIN_PREFIX)) return NextResponse.next();
 
   try {
-    // getToken reads NextAuth cookies and verifies the token using NEXTAUTH_SECRET
-    // It works in middleware (Edge). It returns the decoded token payload or null.
+    // read token from NextAuth cookie (JWT strategy)
     const token = await getToken({ req, secret: NEXTAUTH_SECRET });
 
-
-    // Not signed in -> redirect to login with return url
+    // Not signed in — redirect to login
     if (!token) {
-      const loginUrl = new URL('/login', req.url);
-      loginUrl.searchParams.set('next', pathname);
-      return NextResponse.redirect(loginUrl);
+      const loginUrl = new URL("/login", req.url);
+      loginUrl.searchParams.set("next", pathname);
+
+      const res = NextResponse.redirect(loginUrl);
+      // clear common NextAuth cookies (adjust names if you customized)
+      res.cookies.delete("next-auth.session-token");
+      res.cookies.delete("__Secure-next-auth.session-token");
+      res.cookies.delete("next-auth.csrf-token");
+      return res;
     }
 
-    // token exists. Check role (assumes you put `role` into token/session via callbacks)
-    // E.g. token.role === 'admin'
-    const role = token.role || token?.user?.role || null;
+    // If access token expiry available and expired -> force re-login
+    const now = Date.now();
+    if (token.accessTokenExpires && now >= token.accessTokenExpires) {
+      const loginUrl = new URL("/login", req.url);
+      loginUrl.searchParams.set("next", pathname);
 
-    if (role !== 'admin') {
-      // Signed in but not admin
-      const unauthorizedUrl = new URL('/unauthorized', req.url); // or /403
+      const res = NextResponse.redirect(loginUrl);
+      // clear cookies to avoid stale session reuse
+      res.cookies.delete("next-auth.session-token");
+      res.cookies.delete("__Secure-next-auth.session-token");
+      res.cookies.delete("next-auth.csrf-token");
+      return res;
+    }
+
+    // Role check
+    const role = token.role || token?.user?.role || null;
+    if (role !== "admin") {
+      const unauthorizedUrl = new URL("/unauthorized", req.url);
       return NextResponse.redirect(unauthorizedUrl);
     }
 
     // allowed
     return NextResponse.next();
   } catch (err) {
-    console.warn('Middleware auth error', err);
-    const loginUrl = new URL('/login', req.url);
-    loginUrl.searchParams.set('next', pathname);
-    return NextResponse.redirect(loginUrl);
+    console.warn("Middleware auth error", err);
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("next", pathname);
+
+    const res = NextResponse.redirect(loginUrl);
+    res.cookies.delete("next-auth.session-token");
+    res.cookies.delete("__Secure-next-auth.session-token");
+    res.cookies.delete("next-auth.csrf-token");
+    return res;
   }
 }
 
 export const config = {
-  matcher: ['/admin/:path*'], // protect /admin and all subroutes
+  matcher: ["/admin/:path*"],
 };

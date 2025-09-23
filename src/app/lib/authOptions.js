@@ -1,8 +1,10 @@
 import CredentialsProvider from "next-auth/providers/credentials";
-import { refreshAccessToken } from "./token"; // updated helper above
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 const LOGIN_PATH = process.env.AUTH_LOGIN_PATH || "/auth/login";
+
+// constants
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
 
 export const authOptions = {
   debug: process.env.NODE_ENV === "development",
@@ -22,7 +24,6 @@ export const authOptions = {
           const res = await fetch(`${API_BASE}${LOGIN_PATH}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            // This endpoint should set HttpOnly refresh cookie
             credentials: "include",
             body: JSON.stringify({
               email: credentials.email,
@@ -41,12 +42,11 @@ export const authOptions = {
           const data = payload?.data ?? payload;
 
           const accessToken = data?.accessToken;
-          // we DO NOT expect refreshToken in body because it's set as HttpOnly cookie
           const userObj = data?.admin || data?.user || data;
 
           if (!accessToken) return null;
 
-          // compute expiry from JWT if possible
+          // compute expiry from JWT if possible (optional)
           let accessTokenExpires = null;
           try {
             const parts = accessToken.split(".");
@@ -55,7 +55,12 @@ export const authOptions = {
               if (decoded?.exp) accessTokenExpires = decoded.exp * 1000;
             }
           } catch (e) {
-            accessTokenExpires = Date.now() + 10 * 60 * 1000;
+            // ignore and set fallback below
+          }
+
+          // If we couldn't read expiry from token, default to 30 days from now
+          if (!accessTokenExpires) {
+            accessTokenExpires = Date.now() + THIRTY_DAYS_MS;
           }
 
           return {
@@ -64,8 +69,6 @@ export const authOptions = {
             email: userObj?.email,
             role: userObj?.role,
             accessToken,
-            // refreshToken not available to JS (HttpOnly cookie) — keep null
-            refreshToken: null,
             accessTokenExpires,
           };
         } catch (e) {
@@ -74,13 +77,12 @@ export const authOptions = {
           }
           return null;
         }
-      }
+      },
     }),
   ],
 
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
-      // initial sign in
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.name = user.name;
@@ -89,33 +91,9 @@ export const authOptions = {
 
         token.accessToken = user.accessToken;
         token.accessTokenExpires = user.accessTokenExpires;
-        // refreshToken is cookie-based; keep token.refreshToken as null
-        token.refreshToken = null;
         return token;
       }
 
-      // manual update (if used)
-      if (trigger === "update" && session?.accessToken) {
-        token.accessToken = session.accessToken;
-        token.accessTokenExpires = session.accessTokenExpires ?? token.accessTokenExpires;
-        return token;
-      }
-
-      // return early if token still valid (allow small clock skew)
-      const shouldRefresh = Date.now() >= (token.accessTokenExpires || 0) - 15_000;
-      if (!shouldRefresh) return token;
-
-      // attempt refresh via helper which sends cookie
-      const refreshed = await refreshAccessToken();
-
-      if (refreshed?.error || !refreshed?.accessToken) {
-        token.error = "RefreshAccessTokenError";
-        return token;
-      }
-
-      token.accessToken = refreshed.accessToken;
-      token.accessTokenExpires = refreshed.accessTokenExpires;
-      // refreshToken remains cookie-based; nothing to set in token
       return token;
     },
 
@@ -127,7 +105,7 @@ export const authOptions = {
         role: token.role,
       };
       session.accessToken = token.accessToken ?? null;
-      session.accessTokenExpires = token.accessTokenExpires ?? null;
+      session.accessTokenExpires = token.accessTokenExpires ?? (Date.now() + THIRTY_DAYS_MS);
       session.error = token.error ?? null;
       return session;
     },

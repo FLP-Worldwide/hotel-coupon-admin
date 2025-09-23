@@ -77,12 +77,12 @@ export default function LoginPage() {
             <Form.Item name="remember" valuePropName="checked" className="!mb-0">
               <Checkbox className="text-sm text-[#1E3A8A]">Remember me</Checkbox>
             </Form.Item>
-            <Link
+            {/* <Link
               href="/forgot-password"
               className="text-sm text-[#2563EB] hover:underline"
             >
               Forgot password?
-            </Link>
+            </Link> */}
           </div>
 
           {/* Primary CTA - Blue gradient */}
@@ -97,14 +97,14 @@ export default function LoginPage() {
             {loading ? "Signing in…" : "Sign in"}
           </Button>
 
-          <Divider className="!my-4 !border-dashed" />
+          {/* <Divider className="!my-4 !border-dashed" />
 
           <p className="text-center text-sm text-[#4b5563]">
             Don’t have an account?{" "}
             <Link href="/signup" className="text-[#2563EB] font-medium hover:underline">
               Create one
             </Link>
-          </p>
+          </p> */}
         </Form>
 
         <div className="mt-4 text-center text-xs text-[#6B7280]">

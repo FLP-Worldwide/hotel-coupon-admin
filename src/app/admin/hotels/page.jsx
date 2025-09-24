@@ -105,6 +105,7 @@ export default function HotelsPage() {
       // basic fields
       if (values.name) fd.append('name', values.name);
       if (values.description) fd.append('description', values.description || '');
+      if(values.price) fd.append('price', values.price);
       fd.append('ownerName', values.ownerName || '');
       fd.append('status', values.status || 'active');
 
@@ -217,6 +218,7 @@ export default function HotelsPage() {
     form.setFieldsValue({
       name: hotel.name,
       description: hotel.description,
+      price: hotel.price,
       street: hotel.address?.street,
       city: hotel.address?.city,
       state: hotel.address?.state,
@@ -365,6 +367,9 @@ export default function HotelsPage() {
 
           <Form.Item name="description" label="Description">
             <Input.TextArea rows={3} />
+          </Form.Item>
+          <Form.Item name="price" label="Price" rules={[{ required: true, message: 'Please enter hotel price' }]}>
+            <Input rows={3} />
           </Form.Item>
 
           <Title level={5}>Address</Title>

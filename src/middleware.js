@@ -17,7 +17,7 @@ export async function middleware(req) {
 
     // Not signed in — redirect to login
     if (!token) {
-      const loginUrl = new URL("/login", req.url);
+      const loginUrl = new URL("/", req.url);
       loginUrl.searchParams.set("next", pathname);
 
       const res = NextResponse.redirect(loginUrl);
@@ -31,7 +31,7 @@ export async function middleware(req) {
     // If access token expiry available and expired -> force re-login
     const now = Date.now();
     if (token.accessTokenExpires && now >= token.accessTokenExpires) {
-      const loginUrl = new URL("/login", req.url);
+      const loginUrl = new URL("/", req.url);
       loginUrl.searchParams.set("next", pathname);
 
       const res = NextResponse.redirect(loginUrl);
@@ -53,7 +53,7 @@ export async function middleware(req) {
     return NextResponse.next();
   } catch (err) {
     console.warn("Middleware auth error", err);
-    const loginUrl = new URL("/login", req.url);
+    const loginUrl = new URL("/", req.url);
     loginUrl.searchParams.set("next", pathname);
 
     const res = NextResponse.redirect(loginUrl);

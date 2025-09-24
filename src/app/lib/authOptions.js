@@ -1,7 +1,7 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
-const LOGIN_PATH = process.env.AUTH_LOGIN_PATH || "/auth/login";
+const LOGIN_PATH = process.env.AUTH_LOGIN_PATH || "/";
 
 // constants
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
@@ -112,6 +112,6 @@ export const authOptions = {
   },
 
   pages: {
-    signIn: "/login",
+    signIn: "/",
   },
 };

@@ -16,11 +16,11 @@ export function useAuth() {
 
   // 🚀 Already logged-in user visiting /login → redirect
   useEffect(() => {
-    if (status === "authenticated" && pathname === "/login") {
+    if (status === "authenticated" && pathname === "/") {
       if (user?.role === "admin" || user?.role === "super_admin") {
         router.replace("/admin/dashboard");
       } else {
-        router.replace("/");
+        router.replace("/admin/dashboard");
       }
     }
   }, [status, pathname, user, router]);
@@ -62,7 +62,7 @@ export function useAuth() {
     try {
       await authService.signup({ name, email, password });
       toast.success("Account created. Please log in.");
-      router.push("/login");
+      router.push("/");
     } catch (err) {
       toast.error(err?.message || "Signup failed");
     } finally {
@@ -71,7 +71,7 @@ export function useAuth() {
   }
 
   async function logout() {
-    await signOut({ callbackUrl: "/login" });
+    await signOut({ callbackUrl: "/" });
     toast.success("Logged out successfully");
   }
 

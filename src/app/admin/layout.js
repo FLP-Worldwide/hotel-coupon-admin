@@ -30,6 +30,7 @@ const AdminLayout = ({ children }) => {
     { key: '/admin/bookings', icon: <ShoppingOutlined />, label: 'Bookings' },
     { key: '/admin/coupons', icon: <ShoppingOutlined />, label: 'Coupons' },
     { key: '/admin/users', icon: <UserOutlined />, label: 'Users' },
+    { key: '/admin/agents', icon: <UserOutlined />, label: 'Agents' },
   ];
 
   const userMenuItems = [

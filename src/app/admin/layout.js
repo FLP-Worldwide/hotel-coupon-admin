@@ -23,7 +23,7 @@ const AdminLayout = ({ children }) => {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
-  // Menu items
+  // Full menu items (master list)
   const menuItems = [
     { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
     { key: '/admin/hotels', icon: <AppstoreOutlined />, label: 'Hotels' },
@@ -32,6 +32,30 @@ const AdminLayout = ({ children }) => {
     { key: '/admin/users', icon: <UserOutlined />, label: 'Users' },
     { key: '/admin/agents', icon: <UserOutlined />, label: 'Agents' },
   ];
+
+  // Decide allowed keys by role:
+  const allowedKeysByRole = useMemo(() => {
+    const role = user?.role || 'guest';
+    switch (role) {
+      case 'admin':
+        // admin sees everything
+        return menuItems.map((m) => m.key);
+      case 'hotel':
+        // hotel sees only hotels (you can add more keys if needed)
+        return ['/admin/hotels','/admin/bookings'];
+      case 'agent':
+        // agent sees only agents (adjust if agents should see bookings etc.)
+        return ['/admin/bookings'];
+      default:
+        return []; // no sidebar for other roles
+    }
+  }, [user?.role, menuItems]);
+
+  // Filtered items to render in Menu
+  const visibleMenuItems = useMemo(
+    () => menuItems.filter((m) => allowedKeysByRole.includes(m.key)),
+    [menuItems, allowedKeysByRole]
+  );
 
   const userMenuItems = [
     { key: 'profile', label: 'Profile' },
@@ -51,12 +75,13 @@ const AdminLayout = ({ children }) => {
   };
 
   const selectedKey = useMemo(() => {
-    const found = menuItems.find((m) => pathname.startsWith(m.key));
-    return found ? found.key : '/admin/dashboard';
-  }, [pathname]);
+    const found = visibleMenuItems.find((m) => pathname.startsWith(m.key));
+    // if current pathname isn't in visible items, fallback to first visible or dashboard
+    return found ? found.key : visibleMenuItems[0]?.key || '/';
+  }, [pathname, visibleMenuItems]);
 
   const initials = useMemo(() => {
-    const name = user?.name || user?.email || 'Admin';
+    const name = user?.name || user?.email || 'User';
     return name
       .split(' ')
       .map((p) => p[0])
@@ -65,51 +90,55 @@ const AdminLayout = ({ children }) => {
       .toUpperCase();
   }, [user]);
 
+  const isSidebarVisible = visibleMenuItems.length > 0;
+
   return (
     <Layout style={{ minHeight: '100vh', background: '#f3f7fb' }}>
-      {/* SIDEBAR */}
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        trigger={null}
-        width={220}
-        style={{
-          background: '#052A56', // deep blue
-          boxShadow: '2px 0 10px rgba(6,30,72,0.08)',
-          paddingTop: 12,
-        }}
-      >
-        <div
+      {/* SIDEBAR - render only if role allows items */}
+      {isSidebarVisible && (
+        <Sider
+          collapsible
+          collapsed={collapsed}
+          trigger={null}
+          width={220}
           style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? 0 : '0 20px',
-            color: '#FFFFFF',
-            fontWeight: 700,
-            fontSize: collapsed ? 18 : 18,
-            letterSpacing: 0.4,
+            background: '#052A56', // deep blue
+            boxShadow: '2px 0 10px rgba(6,30,72,0.08)',
+            paddingTop: 12,
           }}
         >
-          {collapsed ? 'NA' : 'Notion Advertising'}
-        </div>
+          <div
+            style={{
+              height: 64,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              padding: collapsed ? 0 : '0 20px',
+              color: '#FFFFFF',
+              fontWeight: 700,
+              fontSize: collapsed ? 18 : 18,
+              letterSpacing: 0.4,
+            }}
+          >
+            {collapsed ? 'NA' : 'Notion Advertising'}
+          </div>
 
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          items={menuItems}
-          onClick={handleMenuClick}
-          style={{
-            marginTop: 12,
-            background: 'transparent',
-            borderRight: 'none',
-            color: '#EAF2FF',
-          }}
-          inlineCollapsed={collapsed}
-        />
-      </Sider>
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[selectedKey]}
+            items={visibleMenuItems}
+            onClick={handleMenuClick}
+            style={{
+              marginTop: 12,
+              background: 'transparent',
+              borderRight: 'none',
+              color: '#EAF2FF',
+            }}
+            inlineCollapsed={collapsed}
+          />
+        </Sider>
+      )}
 
       {/* MAIN */}
       <Layout>
@@ -124,39 +153,42 @@ const AdminLayout = ({ children }) => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Button
-              type="text"
-              onClick={() => setCollapsed(!collapsed)}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 10,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: collapsed ? 'transparent' : 'rgba(22,119,255,0.06)',
-                color: '#0f1724',
-                border: '1px solid rgba(22,119,255,0.08)',
-              }}
-            >
-              {collapsed ? (
-                <MenuUnfoldOutlined style={{ fontSize: 18, color: '#1677ff' }} />
-              ) : (
-                <MenuFoldOutlined style={{ fontSize: 18, color: '#1677ff' }} />
-              )}
-            </Button>
+            {/* Show collapse button only when sidebar is visible */}
+            {isSidebarVisible && (
+              <Button
+                type="text"
+                onClick={() => setCollapsed(!collapsed)}
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: collapsed ? 'transparent' : 'rgba(22,119,255,0.06)',
+                  color: '#0f1724',
+                  border: '1px solid rgba(22,119,255,0.08)',
+                }}
+              >
+                {collapsed ? (
+                  <MenuUnfoldOutlined style={{ fontSize: 18, color: '#1677ff' }} />
+                ) : (
+                  <MenuFoldOutlined style={{ fontSize: 18, color: '#1677ff' }} />
+                )}
+              </Button>
+            )}
 
             <div style={{ fontWeight: 600, fontSize: 16, color: '#0f1724' }}>
-              Admin Panel
+              {/* Title changes based on role */}
+              {user?.role === 'admin' ? 'Admin Panel' : user?.role === 'hotel' ? 'Hotel Panel' : user?.role === 'agent' ? 'Agent Panel' : 'Dashboard'}
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ textAlign: 'right', marginRight: 8 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: '#0F1724' }}>
-                {user?.name || 'Admin'}
+                {user?.name || 'User'}
               </div>
-              {/* <div style={{ fontSize: 12, color: '#6B7280' }}>{user?.email || ''}</div> */}
             </div>
 
             <Dropdown

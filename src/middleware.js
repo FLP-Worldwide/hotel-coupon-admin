@@ -44,7 +44,15 @@ export async function middleware(req) {
 
     // Role check
     const role = token.role || token?.user?.role || null;
-    if (role !== "admin") {
+    // if (role !== "admin") {
+    //   const unauthorizedUrl = new URL("/unauthorized", req.url);
+    //   return NextResponse.redirect(unauthorizedUrl);
+    // }
+
+    // allowed roles
+    const allowedRoles = ["admin", "agent", "hotel"];
+
+    if (!allowedRoles.includes(role)) {
       const unauthorizedUrl = new URL("/unauthorized", req.url);
       return NextResponse.redirect(unauthorizedUrl);
     }

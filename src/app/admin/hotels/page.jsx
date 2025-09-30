@@ -77,7 +77,7 @@ export default function HotelsPage() {
   const fetchHotels = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/admin/hotels');
+      const res = await api.get('/hotels/admin');
       // support both {hotels: []} or an array directly
       const data = res.data?.hotels ?? res.data ?? [];
       setHotels(Array.isArray(data) ? data : []);

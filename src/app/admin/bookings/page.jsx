@@ -44,7 +44,7 @@ export default function CouponBookingsPage() {
     setLoading(true);
     try {
       // admin gets all bookings, users get their own
-      const url = isAdmin ? '/admin/bookings' : '/bookings/me';
+      const url = '/admin/bookings';
       // If your backend mounts differently, change the paths (e.g. '/api/bookings' vs '/admin/bookings')
       const res = await api.get(url);
       // Try common shapes: { bookings: [...] } or direct array

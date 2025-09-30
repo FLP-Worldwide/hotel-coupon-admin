@@ -19,8 +19,8 @@ export function useAuth() {
     if (status === "authenticated" && pathname === "/") {
       if (user?.role === "admin" || user?.role === "super_admin") {
         router.replace("/admin/dashboard");
-      } else {
-        router.replace("/admin/dashboard");
+      } else if (user?.role === 'hotel' || user?.role === 'agent') {
+        router.replace("/admin/bookings");
       }
     }
   }, [status, pathname, user, router]);

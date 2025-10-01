@@ -40,16 +40,6 @@ export function useAuth() {
       }
 
       toast.success("Welcome back!");
-
-      // fetch fresh session for role
-      const sessionRes = await fetch("/api/auth/session");
-      const current = await sessionRes.json();
-
-      if (current?.user?.role === "admin" || current?.user?.role === "super_admin") {
-        router.push("/admin/dashboard");
-      } else {
-        router.push("/");
-      }
     } catch (err) {
       toast.error(err?.message || "Login failed");
     } finally {

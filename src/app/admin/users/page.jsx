@@ -3,6 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { Table, Typography, Space, message } from 'antd';
 import api from '@/app/lib/axios';
 
+import toast from 'react-hot-toast';
+
+
 const { Title } = Typography;
 
 export default function UsersPage() {
@@ -18,7 +21,7 @@ export default function UsersPage() {
       setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch users', err);
-      message.error(err?.response?.data?.message || 'Failed to load users');
+      toast.error(err?.response?.data?.message || 'Failed to load users');
     } finally {
       setLoading(false);
     }

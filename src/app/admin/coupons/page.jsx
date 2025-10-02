@@ -21,6 +21,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import api from '@/app/lib/axios';
+import toast from 'react-hot-toast';
 
 export default function CouponsPage() {
   const [form] = Form.useForm();
@@ -40,7 +41,7 @@ export default function CouponsPage() {
       setCoupons(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('fetch coupons', err);
-      message.error(err?.response?.data?.message || 'Failed to load coupons');
+      toast.error(err?.response?.data?.message || 'Failed to load coupons');
     } finally {
       setLoading(false);
     }
@@ -87,10 +88,10 @@ export default function CouponsPage() {
 
       if (editing && editing._id) {
         await api.put(`/admin/coupons/${editing._id}`, payload);
-        message.success('Coupon updated');
+        toast.success('Coupon updated');
       } else {
         await api.post('/admin/coupons', payload);
-        message.success('Coupon created');
+        toast.success('Coupon created');
       }
 
       form.resetFields();
@@ -99,7 +100,7 @@ export default function CouponsPage() {
       await fetchCoupons();
     } catch (err) {
       console.error('Coupon save error:', err);
-      message.error(err?.response?.data?.message || err?.message || 'Failed to save coupon');
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to save coupon');
     } finally {
       setSubmitting(false);
     }
@@ -109,11 +110,11 @@ export default function CouponsPage() {
   const handleDelete = async (id) => {
     try {
       await api.delete(`/admin/coupons/${id}`);
-      message.success('Coupon deleted');
+      toast.success('Coupon deleted');
       fetchCoupons();
     } catch (err) {
       console.error('delete coupon', err);
-      message.error(err?.response?.data?.message || 'Failed to delete coupon');
+      toast.error(err?.response?.data?.message || 'Failed to delete coupon');
     }
   };
 

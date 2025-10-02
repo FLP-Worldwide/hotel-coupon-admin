@@ -25,6 +25,7 @@ import {
 } from '@ant-design/icons';
 import api from '@/app/lib/axios';
 import { useSession } from 'next-auth/react';
+import toast from "react-hot-toast";
 
 const { Title } = Typography;
 
@@ -83,7 +84,7 @@ export default function HotelsPage() {
       setHotels(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('fetchHotels error', err);
-      message.error(err?.response?.data?.message || 'Failed to load hotels');
+      toast.error(err?.response?.data?.message || 'Failed to load hotels');
     } finally {
       setLoading(false);
     }
@@ -165,12 +166,12 @@ export default function HotelsPage() {
         await api.put(`/admin/hotels/${editingHotel._id}`, fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        message.success('Hotel updated');
+        toast.success('Hotel updated');
       } else {
         await api.post('/admin/hotels', fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        message.success('Hotel created');
+        toast.success('Hotel created');
       }
 
       form.resetFields();
@@ -180,7 +181,8 @@ export default function HotelsPage() {
     } catch (err) {
       console.error('Hotel save error:', err);
       const serverMessage = err?.response?.data?.message || err?.message || 'Failed to save hotel';
-      message.error(serverMessage);
+      // alert(serverMessage);
+      toast.error(serverMessage);
     } finally {
       setSubmitting(false);
     }
@@ -190,11 +192,11 @@ export default function HotelsPage() {
   const handleDelete = async (id) => {
     try {
       await api.delete(`/admin/hotels/${id}`);
-      message.success('Hotel deleted');
+      toast.success('Hotel deleted');
       fetchHotels();
     } catch (err) {
       console.error('delete error', err);
-      message.error(err?.response?.data?.message || 'Failed to delete hotel');
+      toast.error(err?.response?.data?.message || 'Failed to delete hotel');
     }
   };
 

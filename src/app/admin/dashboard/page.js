@@ -15,6 +15,7 @@ import {
   Spin,
   message,
 } from 'antd';
+import toast from 'react-hot-toast';
 import {
   AppstoreOutlined,
   GiftOutlined,
@@ -149,7 +150,7 @@ export default function AdminDashboardFixed() {
       setDashboard(data || null);
     } catch (err) {
       console.error('Failed to load dashboard', err);
-      message.error(err?.response?.data?.message || err?.message || 'Failed to load dashboard');
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to load dashboard');
     } finally {
       setLoading(false);
     }

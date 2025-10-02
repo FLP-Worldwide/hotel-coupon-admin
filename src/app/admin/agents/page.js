@@ -23,6 +23,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant
 import { useSession } from 'next-auth/react';
 import api from '@/app/lib/axios'; // your axios instance
 import dayjs from 'dayjs';
+import toast from 'react-hot-toast';
 
 export default function AdminAgentsPanel() {
   const { data: session, status: sessionStatus } = useSession();
@@ -52,7 +53,7 @@ export default function AdminAgentsPanel() {
       setFilteredAgents(data);
     } catch (err) {
       console.error('fetchAgents error', err);
-      message.error(err?.response?.data?.message || err?.message || 'Failed to fetch agents');
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to fetch agents');
     } finally {
       setLoading(false);
     }
@@ -96,11 +97,11 @@ export default function AdminAgentsPanel() {
   const handleDelete = async (id) => {
     try {
       await api.delete(`/admin/agents/${id}`);
-      message.success('Agent deleted');
+      toast.success('Agent deleted');
       fetchAgents();
     } catch (err) {
       console.error('delete error', err);
-      message.error(err?.response?.data?.message || 'Delete failed');
+      toast.error(err?.response?.data?.message || 'Delete failed');
     }
   };
 
@@ -108,10 +109,10 @@ export default function AdminAgentsPanel() {
     try {
       if (editingAgent) {
         await api.put(`/admin/agents/${editingAgent._id || editingAgent.id}`, values);
-        message.success('Agent updated');
+        toast.success('Agent updated');
       } else {
         await api.post('/admin/agents', values);
-        message.success('Agent created');
+        toast.success('Agent created');
       }
       setModalOpen(false);
       form.resetFields();
@@ -119,7 +120,7 @@ export default function AdminAgentsPanel() {
       fetchAgents();
     } catch (err) {
       console.error('save error', err);
-      message.error(err?.response?.data?.message || err?.message || 'Save failed');
+      toast.error(err?.response?.data?.message || err?.message || 'Save failed');
     }
   };
 

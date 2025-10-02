@@ -21,6 +21,7 @@ import dayjs from 'dayjs';
 import api from '@/app/lib/axios';
 import { useSession } from 'next-auth/react';
 
+import toast from 'react-hot-toast';
 const { RangePicker } = DatePicker;
 
 export default function CouponBookingsPage() {
@@ -52,7 +53,7 @@ export default function CouponBookingsPage() {
       setBookings(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch bookings', err);
-      message.error(err?.response?.data?.message || err?.message || 'Failed to load bookings');
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to load bookings');
     } finally {
       setLoading(false);
     }

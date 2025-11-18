@@ -11,8 +11,9 @@ import {
   Tag,
   DatePicker,
   InputNumber,
-  message,
   Popconfirm,
+  Row,
+  Col,
 } from 'antd';
 import {
   PlusOutlined,
@@ -23,84 +24,106 @@ import dayjs from 'dayjs';
 import api from '@/app/lib/axios';
 import toast from 'react-hot-toast';
 
-export default function CouponsPage() {
+const { Option } = Select;
+
+function generateCouponCode(length = 6) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < length; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+export default function PlansPage() {
   const [form] = Form.useForm();
-  const [coupons, setCoupons] = useState([]);
+  const [plans, setPlans] = useState([]);
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  // Fetch coupons
-  const fetchCoupons = async () => {
+  // Fetch plans
+  const fetchPlans = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/admin/coupons');
-      const data = res.data?.coupons ?? res.data ?? [];
-      setCoupons(Array.isArray(data) ? data : []);
+
+      const res = await api.get('/admin/coupons/plans');
+
+      const data = res.data?.plans ?? res.data ?? [];
+      setPlans(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('fetch coupons', err);
-      toast.error(err?.response?.data?.message || 'Failed to load coupons');
+      console.error('fetch plans', err);
+      toast.error(err?.response?.data?.message || 'Failed to load plans');
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch hotels for dropdown
+  // Fetch hotels
   const fetchHotels = async () => {
     try {
       const res = await api.get('/admin/hotels');
       const data = res.data?.hotels ?? res.data ?? [];
       setHotels(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.warn('Failed to load hotels for coupons', err);
+      console.warn('Failed to load hotels for plans', err);
     }
   };
 
   useEffect(() => {
-    fetchCoupons();
+    fetchPlans();
     fetchHotels();
   }, []);
 
-  // Submit (create or update)
+  // Submit (create / update)
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       setSubmitting(true);
 
       const payload = {
-        code: values.code,
+        name: values.name, // plan name
         title: values.title || '',
         description: values.description || '',
-        price: values.price != null ? Number(values.price) : undefined,
-        discountType: values.discountType, // 'percentage' | 'fixed'
-        discountValue: Number(values.discountValue) || 0,
-        // map expiry date -> validTo
+        price: values.price != null ? Number(values.price) : undefined, // plan price
         validTo: values.expiryDate ? values.expiryDate.toISOString() : undefined,
-        minOrderValue: values.minOrderValue ?? 0,
-        maxDiscount: values.maxDiscount ?? undefined,
-        usageLimit: values.usageLimit ?? 0,
-        perUserLimit: values.perUserLimit ?? 1,
-        applicableHotels: values.hotels || [], // array of hotel ids
+        applicableHotels: values.hotels || [],
         status: values.status || 'active',
+        coupons: (values.coupons || []).map((c) => ({
+          code: c.code,
+          couponPrice:
+            c.couponPrice != null && c.couponPrice !== ''
+              ? Number(c.couponPrice)
+              : undefined,
+          discountType: c.discountType,
+          discountValue: Number(c.discountValue) || 0,
+          description: c.description || '',
+          minOrderValue: c.minOrderValue ?? 0,
+        })),
       };
 
+
       if (editing && editing._id) {
-        await api.put(`/admin/coupons/${editing._id}`, payload);
-        toast.success('Coupon updated');
+        await api.put(`/admin/coupons/plans/${editing._id}`, payload);
+        toast.success('Plan updated');
       } else {
-        await api.post('/admin/coupons', payload);
-        toast.success('Coupon created');
+        await api.post('/admin/coupons/plans', payload);
+        toast.success('Plan created');
       }
 
       form.resetFields();
       setOpen(false);
       setEditing(null);
-      await fetchCoupons();
+      await fetchPlans();
     } catch (err) {
-      console.error('Coupon save error:', err);
-      toast.error(err?.response?.data?.message || err?.message || 'Failed to save coupon');
+      if (err?.errorFields) {
+        console.warn('Validation failed', err);
+      } else {
+        console.error('Plan save error:', err);
+        toast.error(err?.response?.data?.message || err?.message || 'Failed to save plan');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -109,52 +132,54 @@ export default function CouponsPage() {
   // Delete
   const handleDelete = async (id) => {
     try {
-      await api.delete(`/admin/coupons/${id}`);
-      toast.success('Coupon deleted');
-      fetchCoupons();
+      await api.delete(`/admin/coupons/plans/${id}`);
+      toast.success('Plan deleted');
+      fetchPlans();
     } catch (err) {
-      console.error('delete coupon', err);
-      toast.error(err?.response?.data?.message || 'Failed to delete coupon');
+      console.error('delete plan', err);
+      toast.error(err?.response?.data?.message || 'Failed to delete plan');
     }
   };
 
-  // Edit fill
-  const handleEdit = (coupon) => {
-    setEditing(coupon);
+  // Edit
+  const handleEdit = (plan) => {
+    setEditing(plan);
     setOpen(true);
 
     form.setFieldsValue({
-      code: coupon.code,
-      title: coupon.title,
-      description: coupon.description,
-      price: coupon.price ?? undefined,
-      discountType: coupon.discountType,
-      discountValue: coupon.discountValue,
-      expiryDate: coupon.validTo ? dayjs(coupon.validTo) : null,
-      minOrderValue: coupon.minOrderValue ?? coupon.minAmount ?? 0,
-      maxDiscount: coupon.maxDiscount ?? undefined,
-      usageLimit: coupon.usageLimit ?? 0,
-      perUserLimit: coupon.perUserLimit ?? 1,
-      hotels: (coupon.applicableHotels || coupon.hotels || []).map((h) => (typeof h === 'string' ? h : h._id)),
-      status: coupon.status,
+      name: plan.name,
+      title: plan.title,
+      description: plan.description,
+      price: plan.price ?? undefined,
+      expiryDate: plan.validTo ? dayjs(plan.validTo) : null,
+      hotels: (plan.applicableHotels || plan.hotels || []).map((h) =>
+        typeof h === 'string' ? h : h._id,
+      ),
+      status: plan.status,
+      coupons:
+        (plan.coupons || []).map((c) => ({
+          code: c.code,
+          couponPrice: c.couponPrice,
+          discountType: c.discountType,
+          discountValue: c.discountValue,
+          description: c.description,
+          minOrderValue: c.minOrderValue,
+        })) ?? [],
     });
   };
 
   const columns = [
-    { title: 'Code', dataIndex: 'code', key: 'code' },
+    { title: 'Plan Name', dataIndex: 'name', key: 'name' },
     {
-      title: 'Price',
+      title: 'Plan Price',
       dataIndex: 'price',
       key: 'price',
       render: (p) => (p != null ? `₹${p}` : '-'),
     },
     {
-      title: 'Discount',
-      key: 'discount',
-      render: (_, record) =>
-        record.discountType === 'percentage'
-          ? `${record.discountValue}%`
-          : `₹${record.discountValue}`,
+      title: 'Coupons',
+      key: 'couponCount',
+      render: (record) => record.coupons?.length || 0,
     },
     {
       title: 'Expiry',
@@ -163,16 +188,12 @@ export default function CouponsPage() {
       render: (d) => (d ? dayjs(d).format('DD MMM YYYY') : '-'),
     },
     {
-      title: 'Min Order',
-      dataIndex: 'minOrderValue',
-      key: 'minOrderValue',
-      render: (v) => (v !== undefined ? `₹${v}` : '-'),
-    },
-    {
       title: 'Status',
       dataIndex: 'status',
       render: (s) => (
-        <Tag color={s === 'active' ? 'blue' : 'red'}>{String(s || '').toUpperCase()}</Tag>
+        <Tag color={s === 'active' ? 'blue' : 'red'}>
+          {String(s || '').toUpperCase()}
+        </Tag>
       ),
     },
     {
@@ -182,7 +203,7 @@ export default function CouponsPage() {
         <Space>
           <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
           <Popconfirm
-            title="Delete this coupon?"
+            title="Delete this plan?"
             onConfirm={() => handleDelete(record._id)}
           >
             <Button danger icon={<DeleteOutlined />} />
@@ -191,6 +212,28 @@ export default function CouponsPage() {
       ),
     },
   ];
+
+  const handleGenerateCoupons = () => {
+    const count = form.getFieldValue('couponCount') || 0;
+    if (!count || count <= 0) {
+      toast.error('Please enter how many coupons you need');
+      return;
+    }
+
+    const existing = form.getFieldValue('coupons') || [];
+    const generated = Array.from({ length: count }).map(() => ({
+      code: generateCouponCode(6),
+      couponPrice: undefined,
+      discountType: 'percentage',
+      discountValue: 0,
+      description: '',
+      minOrderValue: 0,
+    }));
+
+    form.setFieldsValue({
+      coupons: [...existing, ...generated],
+    });
+  };
 
   return (
     <div style={{ padding: 24 }}>
@@ -202,7 +245,7 @@ export default function CouponsPage() {
           width: '100%',
         }}
       >
-        <h2 style={{ margin: 0 }}>Coupons</h2>
+        <h2 style={{ margin: 0 }}>Plans</h2>
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -212,20 +255,21 @@ export default function CouponsPage() {
             setOpen(true);
           }}
         >
-          Create Coupon
+          Create Plan
         </Button>
       </Space>
 
       <Table
         columns={columns}
-        dataSource={coupons}
+        dataSource={plans}
         rowKey={(r) => r._id || r.id}
         loading={loading}
       />
 
       <Modal
         open={open}
-        title={editing ? 'Edit Coupon' : 'Create Coupon'}
+        title={editing ? 'Edit Plan' : 'Create Plan'}
+        width={1100}
         onCancel={() => {
           setOpen(false);
           setEditing(null);
@@ -233,101 +277,202 @@ export default function CouponsPage() {
         onOk={handleSubmit}
         okText="Save"
         confirmLoading={submitting}
-        destroyOnHidden
+        destroyOnClose
       >
         <Form layout="vertical" form={form}>
-          <Form.Item
-            name="code"
-            label="Coupon Code"
-            rules={[{ required: true, message: 'Enter coupon code' }]}
+          {/* PLAN FIELDS IN GRID */}
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item
+                name="name"
+                label="Plan Name"
+                rules={[{ required: true, message: 'Enter plan name' }]}
+              >
+                <Input placeholder="Starter Plan" />
+              </Form.Item>
+            </Col>
+
+            <Col span={8}>
+              <Form.Item name="title" label="Title">
+                <Input />
+              </Form.Item>
+            </Col>
+
+            <Col span={8}>
+              <Form.Item
+                name="price"
+                label="Plan Price (₹)"
+                rules={[
+                  { required: true, message: 'Enter plan price' },
+                  { type: 'number', message: 'Plan price must be a number' },
+                ]}
+              >
+                <InputNumber min={0} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="expiryDate" label="Plan Expiry Date">
+                <DatePicker style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+
+            <Col span={8}>
+              <Form.Item
+                name="status"
+                label="Status"
+                initialValue="active"
+                rules={[{ required: true }]}
+              >
+                <Select>
+                  <Option value="active">Active</Option>
+                  <Option value="inactive">Inactive</Option>
+                  <Option value="expired">Expired</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col span={8}>
+              <Form.Item name="hotels" label="Applicable Hotels">
+                <Select
+                  mode="multiple"
+                  placeholder="Select hotels"
+                  optionFilterProp="children"
+                  showSearch
+                >
+                  {hotels.map((h) => (
+                    <Option key={h._id} value={h._id}>
+                      {h.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item name="description" label="Plan Description">
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {/* COUPON GENERATION */}
+          <Space
+            style={{
+              marginTop: 16,
+              marginBottom: 8,
+              display: 'flex',
+              justifyContent: 'space-between',
+              width: '100%',
+            }}
           >
-            <Input />
-          </Form.Item>
-
-          <Form.Item name="title" label="Title">
-            <Input />
-          </Form.Item>
-
-          <Form.Item name="description" label="Description">
-            <Input />
-          </Form.Item>
-
-          <Form.Item
-            name="price"
-            label="Price (₹)"
-            rules={[
-              { required: false },
-              { type: 'number', message: 'Price must be a number' },
-            ]}
-          >
-            <InputNumber min={0} style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item
-            name="discountType"
-            label="Discount Type"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Select.Option value="percentage">Percentage (%)</Select.Option>
-              <Select.Option value="fixed">Fixed (₹)</Select.Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="discountValue"
-            label="Discount Value"
-            rules={[{ required: true, message: 'Enter discount value' }]}
-          >
-            <InputNumber min={1} style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item name="maxDiscount" label="Max Discount (for percentage, optional)">
-            <InputNumber min={0} style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item name="expiryDate" label="Expiry Date">
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item name="minOrderValue" label="Minimum Order Amount">
-            <InputNumber min={0} style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item name="usageLimit" label="Usage Limit (global, 0 = unlimited)">
-            <InputNumber min={0} style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item name="perUserLimit" label="Per User Limit">
-            <InputNumber min={1} style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item name="hotels" label="Applicable Hotels">
-            <Select
-              mode="multiple"
-              placeholder="Select hotels"
-              optionFilterProp="children"
+            <Form.Item
+              name="couponCount"
+              label="How many coupons?"
+              style={{ flex: 1, marginRight: 8 }}
             >
-              {hotels.map((h) => (
-                <Select.Option key={h._id} value={h._id}>
-                  {h.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
+              <InputNumber min={1} style={{ width: '100%' }} />
+            </Form.Item>
+            <Button
+              type="default"
+              style={{ alignSelf: 'flex-end', marginBottom: 4 }}
+              onClick={handleGenerateCoupons}
+            >
+              Generate Coupons
+            </Button>
+          </Space>
 
-          <Form.Item
-            name="status"
-            label="Status"
-            initialValue="active"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Select.Option value="active">Active</Select.Option>
-              <Select.Option value="inactive">Inactive</Select.Option>
-              <Select.Option value="expired">Expired</Select.Option>
-            </Select>
-          </Form.Item>
+          {/* COUPON LIST (SINGLE ROW PER COUPON) */}
+          <Form.List name="coupons">
+            {(fields, { remove }) => (
+              <>
+                {fields.length > 0 && (
+                  <div
+                    style={{
+                      marginBottom: 8,
+                      fontWeight: 600,
+                      fontSize: 16,
+                    }}
+                  >
+                    Generated Coupons
+                  </div>
+                )}
+
+                {fields.map((field) => (
+                  <div
+                    key={field.key}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns:
+                        '1.3fr 1fr 0.8fr 1.6fr 1fr 0.2fr',
+                      gap: '10px',
+                      marginBottom: '12px',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Form.Item
+                      {...field}
+                      name={[field.name, 'code']}
+                      label="Code"
+                      rules={[{ required: true, message: 'Enter code' }]}
+                    >
+                      <Input />
+                    </Form.Item>
+
+                    <Form.Item
+                      {...field}
+                      name={[field.name, 'discountType']}
+                      label="Type"
+                      rules={[{ required: true }]}
+                    >
+                      <Select>
+                        <Option value="percentage">%</Option>
+                        <Option value="fixed">₹</Option>
+                      </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                      {...field}
+                      name={[field.name, 'discountValue']}
+                      label="Value"
+                      rules={[{ required: true }]}
+                    >
+                      <InputNumber min={1} style={{ width: '100%' }} />
+                    </Form.Item>
+
+                    <Form.Item
+                      {...field}
+                      name={[field.name, 'description']}
+                      label="Description"
+                    >
+                      <Input />
+                    </Form.Item>
+
+                    <Form.Item
+                      {...field}
+                      name={[field.name, 'minOrderValue']}
+                      label="Min Order"
+                    >
+                      <InputNumber min={0} style={{ width: '100%' }} />
+                    </Form.Item>
+
+                    <Button
+                      danger
+                      type="link"
+                      onClick={() => remove(field.name)}
+                      style={{ paddingTop: 24 }}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                ))}
+              </>
+            )}
+          </Form.List>
         </Form>
       </Modal>
     </div>

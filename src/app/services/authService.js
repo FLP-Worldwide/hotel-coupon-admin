@@ -2,7 +2,7 @@ import api from "../lib/axios";
 export const authService = {
   signup(payload) {
     // payload: { name, email, password }
-    return api.post("/admin/signup", payload);
+    return api.post("/admin/register", payload);
   },
   login(payload) {
     return api.post("/admin/login", payload);

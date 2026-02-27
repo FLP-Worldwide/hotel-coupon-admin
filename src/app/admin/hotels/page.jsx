@@ -95,94 +95,159 @@ export default function HotelsPage() {
   }, []);
 
   // ---- Submit (Create or Update)
+  // const handleSubmit = async () => {
+  //   try {
+  //     const values = await form.validateFields();
+  //     setSubmitting(true);
+
+  //     // Build FormData
+  //     const fd = new FormData();
+
+  //     // basic fields
+  //     if (values.name) fd.append('name', values.name);
+  //     if (values.description) fd.append('description', values.description || '');
+  //     if(values.price) fd.append('price', values.price);
+  //     fd.append('ownerName', values.ownerName || '');
+  //     fd.append('status', values.status || 'active');
+
+  //     // address object
+  //     const address = {
+  //       street: values.street || '',
+  //       city: values.city || '',
+  //       state: values.state || '',
+  //       country: values.country || '',
+  //       postalCode: values.postalCode || '',
+  //     };
+  //     fd.append('address', JSON.stringify(address));
+
+  //     // contact object — phone required by server
+  //     const contact = {
+  //       phone: values.phone || '',
+  //       email: values.email || '',
+  //     };
+  //     fd.append('contact', JSON.stringify(contact));
+
+  //     // location -> server expects { coordinates: [lng, lat] }
+  //     const lng = values.longitude !== undefined && values.longitude !== '' ? Number(values.longitude) : null;
+  //     const lat = values.latitude !== undefined && values.latitude !== '' ? Number(values.latitude) : null;
+  //     if (lng !== null && !Number.isNaN(lng) && lat !== null && !Number.isNaN(lat)) {
+  //       fd.append('location', JSON.stringify({ coordinates: [lng, lat] }));
+  //     }
+
+  //     // amenities array
+  //     fd.append('amenities', JSON.stringify(values.amenities || []));
+
+  //     // images:
+  //     // Ant Upload fileList items: for new files they have originFileObj
+  //     // for existing images (we fed them with .url) they will NOT have originFileObj
+
+  //     //old image upload code
+
+  //     // const filesList = values.images || [];
+  //     // const existingImageUrls = [];
+
+  //     // filesList.forEach((f) => {
+  //     //   if (!f) return;
+  //     //   if (f.originFileObj) {
+  //     //     // new file selected in Upload
+  //     //     fd.append('images', f.originFileObj);
+  //     //   } else if (f.url) {
+  //     //     // existing image — send as existingImages so server can keep it
+  //     //     existingImageUrls.push(f.url);
+  //     //   } else if (f.response && f.response.url) {
+  //     //     // sometimes upload control saves response
+  //     //     existingImageUrls.push(f.response.url);
+  //     //   }
+  //     // });
+  //      //old image upload code end here
+  //      // images array (direct URLs)
+  //     fd.append('images', JSON.stringify(values.images || []));
+
+  //     // if (existingImageUrls.length) {
+  //     //   fd.append('existingImages', JSON.stringify(existingImageUrls));
+  //     // }
+
+  //     // If editing -> PUT else -> POST
+  //     if (editingHotel && editingHotel._id) {
+  //       await api.put(`/admin/hotels/${editingHotel._id}`, fd, {
+  //         headers: { 'Content-Type': 'multipart/form-data' },
+  //       });
+  //       toast.success('Hotel updated');
+  //     } else {
+  //       await api.post('/admin/hotels', fd, {
+  //         headers: { 'Content-Type': 'multipart/form-data' },
+  //       });
+  //       toast.success('Hotel created');
+  //     }
+
+  //     form.resetFields();
+  //     setOpen(false);
+  //     setEditingHotel(null);
+  //     await fetchHotels();
+  //   } catch (err) {
+  //     console.error('Hotel save error:', err);
+  //     const serverMessage = err?.response?.data?.message || err?.message || 'Failed to save hotel';
+  //     // alert(serverMessage);
+  //     toast.error(serverMessage);
+  //   } finally {
+  //     setSubmitting(false);
+  //   }
+  // };
+
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       setSubmitting(true);
 
-      // Build FormData
-      const fd = new FormData();
+      const payload = {
+        name: values.name,
+        description: values.description || '',
+        price: values.price,
+        ownerName: values.ownerName || '',
+        status: values.status || 'active',
 
-      // basic fields
-      if (values.name) fd.append('name', values.name);
-      if (values.description) fd.append('description', values.description || '');
-      if(values.price) fd.append('price', values.price);
-      fd.append('ownerName', values.ownerName || '');
-      fd.append('status', values.status || 'active');
+        address: {
+          street: values.street || '',
+          city: values.city || '',
+          state: values.state || '',
+          country: values.country || '',
+          postalCode: values.postalCode || '',
+        },
 
-      // address object
-      const address = {
-        street: values.street || '',
-        city: values.city || '',
-        state: values.state || '',
-        country: values.country || '',
-        postalCode: values.postalCode || '',
+        contact: {
+          phone: values.phone || '',
+          email: values.email || '',
+        },
+
+        amenities: values.amenities || [],
+        images: values.images || [],
       };
-      fd.append('address', JSON.stringify(address));
 
-      // contact object — phone required by server
-      const contact = {
-        phone: values.phone || '',
-        email: values.email || '',
-      };
-      fd.append('contact', JSON.stringify(contact));
-
-      // location -> server expects { coordinates: [lng, lat] }
-      const lng = values.longitude !== undefined && values.longitude !== '' ? Number(values.longitude) : null;
-      const lat = values.latitude !== undefined && values.latitude !== '' ? Number(values.latitude) : null;
-      if (lng !== null && !Number.isNaN(lng) && lat !== null && !Number.isNaN(lat)) {
-        fd.append('location', JSON.stringify({ coordinates: [lng, lat] }));
+      // location
+      const lng = Number(values.longitude);
+      const lat = Number(values.latitude);
+      if (!isNaN(lng) && !isNaN(lat)) {
+        payload.location = {
+          coordinates: [lng, lat],
+        };
       }
 
-      // amenities array
-      fd.append('amenities', JSON.stringify(values.amenities || []));
-
-      // images:
-      // Ant Upload fileList items: for new files they have originFileObj
-      // for existing images (we fed them with .url) they will NOT have originFileObj
-      const filesList = values.images || [];
-      const existingImageUrls = [];
-
-      filesList.forEach((f) => {
-        if (!f) return;
-        if (f.originFileObj) {
-          // new file selected in Upload
-          fd.append('images', f.originFileObj);
-        } else if (f.url) {
-          // existing image — send as existingImages so server can keep it
-          existingImageUrls.push(f.url);
-        } else if (f.response && f.response.url) {
-          // sometimes upload control saves response
-          existingImageUrls.push(f.response.url);
-        }
-      });
-
-      if (existingImageUrls.length) {
-        fd.append('existingImages', JSON.stringify(existingImageUrls));
-      }
-
-      // If editing -> PUT else -> POST
       if (editingHotel && editingHotel._id) {
-        await api.put(`/admin/hotels/${editingHotel._id}`, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        await api.put(`/admin/hotels/${editingHotel._id}`, payload);
         toast.success('Hotel updated');
       } else {
-        await api.post('/admin/hotels', fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        await api.post('/admin/hotels', payload);
         toast.success('Hotel created');
       }
 
       form.resetFields();
       setOpen(false);
       setEditingHotel(null);
-      await fetchHotels();
+      fetchHotels();
+
     } catch (err) {
       console.error('Hotel save error:', err);
-      const serverMessage = err?.response?.data?.message || err?.message || 'Failed to save hotel';
-      // alert(serverMessage);
-      toast.error(serverMessage);
+      toast.error(err?.response?.data?.message || 'Failed to save hotel');
     } finally {
       setSubmitting(false);
     }
@@ -233,7 +298,8 @@ export default function HotelsPage() {
       amenities: hotel.amenities || [],
       ownerName: hotel.ownerName,
       status: hotel.status || 'active',
-      images: imagesFileList,
+      images: hotel.images || [],
+      // images: imagesFileList,
     });
   };
 
@@ -447,7 +513,7 @@ export default function HotelsPage() {
             </Select>
           </Form.Item>
 
-          <Form.Item
+          {/* <Form.Item
             name="images"
             label="Hotel Images"
             valuePropName="fileList"
@@ -460,6 +526,17 @@ export default function HotelsPage() {
               <p className="ant-upload-text">Click or drag images to upload</p>
               <p className="ant-upload-hint">You can upload multiple images (max 5MB each)</p>
             </Upload.Dragger>
+          </Form.Item> */}
+
+          <Form.Item
+            name="images"
+            label="Hotel Image URLs"
+            rules={[{ required: true, message: 'Please enter at least one image URL' }]}
+          >
+            <Select
+              mode="tags"
+              placeholder="Paste image URLs and press enter"
+            />
           </Form.Item>
 
           <Form.Item

@@ -106,6 +106,7 @@ export default function PlansPage() {
         benefits: (values.benefits || []).map((b) => ({
           name: b.name,
           couponCount: Number(b.couponCount),
+          description: b.description || "", 
           redeemPerVisit: Number(b.redeemPerVisit),
           discountType: b.discountType,
           discountValue: Number(b.discountValue),
@@ -162,6 +163,7 @@ export default function PlansPage() {
         benefitMap[key] = {
           name: key,
           couponCount: 0,
+          description: c.description || "",
           redeemPerVisit: c.redeemPerVisit || 1,
           discountType: c.discountType || "fixed",
           discountValue: c.discountValue || 0,

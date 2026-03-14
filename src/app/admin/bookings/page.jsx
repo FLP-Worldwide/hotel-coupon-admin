@@ -14,6 +14,7 @@ import {
   Tag,
   Avatar,
   message,
+  Popover,
   Spin,
 } from 'antd';
 import { SearchOutlined, FilterOutlined } from '@ant-design/icons';
@@ -94,18 +95,54 @@ export default function CouponBookingsPage() {
       ),
       width: 220,
     },
-    {
-      title: 'Coupon',
-      dataIndex: 'coupon',
-      key: 'coupon',
-      render: (c) => (
-        <div>
-          <div style={{ fontWeight: 600 }}>{c?.title || c?.code || '-'}</div>
-          <div style={{ fontSize: 12, color: '#666' }}>Code: {c?.code || '-'}</div>
+   
+{
+  title: 'Plan / Benefits',
+  key: 'plan',
+  render: (_, record) => {
+    const benefits = record?.benefits || [];
+
+    const visible = benefits.slice(0, 3); // approx 2 rows
+    const hidden = benefits.slice(3);
+
+    return (
+      <div style={{ maxWidth: 420 }}>
+        {/* PLAN NAME */}
+        <div style={{ fontWeight: 600, marginBottom: 6 }}>
+          {record?.plan || '-'}
         </div>
-      ),
-      width: 260,
-    },
+
+        {/* BENEFIT TAGS */}
+        <Space wrap>
+          {visible.map((b, i) => (
+            <Tag key={i} color="blue">
+              {b.title} × {b.count}
+            </Tag>
+          ))}
+
+          {hidden.length > 0 && (
+            <Popover
+              placement="topLeft"
+              content={
+                <Space wrap style={{ maxWidth: 300 }}>
+                  {hidden.map((b, i) => (
+                    <Tag key={i} color="blue">
+                      {b.title} × {b.count}
+                    </Tag>
+                  ))}
+                </Space>
+              }
+            >
+              <Tag color="default">+{hidden.length} more</Tag>
+            </Popover>
+          )}
+        </Space>
+      </div>
+    );
+  },
+  width: 420,
+},
+
     { title: 'Qty', dataIndex: 'qty', key: 'qty', width: 80 },
     {
       title: 'Total',

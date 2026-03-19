@@ -479,12 +479,12 @@ export default function HotelsPage() {
                 label="Phone"
                 rules={[{ required: true, message: 'Phone is required' }]}
               >
-                <Input />
+                <Input disabled={!!editingHotel} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="email" label="Email">
-                <Input />
+               <Input disabled={!!editingHotel} />
               </Form.Item>
             </Col>
           </Row>

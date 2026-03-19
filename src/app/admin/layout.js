@@ -7,6 +7,7 @@ import {
   ShoppingOutlined,
   AppstoreOutlined,
   UserOutlined,
+  FileImageOutlined,
 } from '@ant-design/icons';
 import { Layout, Menu, Button, Avatar, Dropdown, theme } from 'antd';
 import { useRouter, usePathname } from 'next/navigation';
@@ -26,7 +27,9 @@ const AdminLayout = ({ children }) => {
   // Full menu items (master list)
   const menuItems = [
     { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
+    { key: '/admin/sliders', icon: <FileImageOutlined />, label: 'Sliders' },
     { key: '/admin/hotels', icon: <AppstoreOutlined />, label: 'Hotels' },
+    { key: '/admin/redeem-requests', icon: <AppstoreOutlined />, label: 'Redeem Requests' },
     { key: '/admin/bookings', icon: <ShoppingOutlined />, label: 'Bookings' },
     { key: '/admin/coupons', icon: <ShoppingOutlined />, label: 'Coupons' },
     { key: '/admin/users', icon: <UserOutlined />, label: 'Users' },
@@ -38,16 +41,26 @@ const AdminLayout = ({ children }) => {
     const role = user?.role || 'guest';
     switch (role) {
       case 'admin':
-        // admin sees everything
-        return menuItems.map((m) => m.key);
+        
+        // return menuItems.map((m) => m.key);
+        return[
+          '/admin/dashboard',
+          '/admin/sliders',
+          '/admin/hotels',
+          '/admin/bookings',
+          '/admin/coupons',
+          '/admin/users',
+          '/admin/agents',
+        ];
+
       case 'hotel':
-        // hotel sees only hotels (you can add more keys if needed)
-        return ['/admin/hotels','/admin/bookings'];
+       
+        return ['/admin/hotels','/admin/bookings','/admin/redeem-requests'];
       case 'agent':
-        // agent sees only agents (adjust if agents should see bookings etc.)
+        
         return ['/admin/bookings'];
       default:
-        return []; // no sidebar for other roles
+        return []; 
     }
   }, [user?.role, menuItems]);
 

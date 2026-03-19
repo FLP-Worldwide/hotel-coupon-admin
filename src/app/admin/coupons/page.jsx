@@ -102,7 +102,7 @@ export default function PlansPage() {
         validityMonths: Number(values.validityMonths),
         applicableHotels: values.hotels || [],
         status: values.status || 'active',
-
+        rules: (values.rules || []).map((r) => r.text),
         benefits: (values.benefits || []).map((b) => ({
           name: b.name,
           couponCount: Number(b.couponCount),
@@ -186,6 +186,8 @@ export default function PlansPage() {
       ),
       status: plan.status,
       benefits,
+      rules: (plan.rules || []).map((r) => ({ text: r })),
+
     });
   };
 
@@ -391,6 +393,54 @@ export default function PlansPage() {
           <Form.Item name="description" label="Plan Description">
             <Input />
           </Form.Item>
+
+          <Form.List name="rules">
+            {(fields, { add, remove }) => (
+              <>
+                <div
+                  style={{
+                    fontWeight: 600,
+                    marginBottom: 10,
+                    fontSize: 16,
+                    marginTop: 20,
+                  }}
+                >
+                  How to Use / Rules
+                </div>
+
+                {fields.map((field, index) => (
+                  <Row gutter={10} key={field.key} align="middle">
+                    <Col span={22}>
+                      <Form.Item
+                        {...field}
+                        name={[field.name, 'text']}
+                        rules={[{ required: true, message: 'Enter rule' }]}
+                      >
+                        <Input
+                          placeholder={`Rule ${index + 1}`}
+                          prefix="•"
+                        />
+                      </Form.Item>
+                    </Col>
+
+                    <Col span={2}>
+                      <Button
+                        danger
+                        type="link"
+                        onClick={() => remove(field.name)}
+                      >
+                        ✕
+                      </Button>
+                    </Col>
+                  </Row>
+                ))}
+
+                <Button type="dashed" onClick={() => add()} block>
+                  + Add Rule
+                </Button>
+              </>
+            )}
+          </Form.List>
 
           {/* BENEFITS */}
 
